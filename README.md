@@ -1,27 +1,139 @@
-# 도담
+<div align="center">
+  <img src="docs/readme/icon.png" width="88" alt="도담 아이콘" />
+  <h1>도담 圖談</h1>
+  <p><strong>아이의 그림과 이야기를 보호자의 이해로 연결하는 서비스</strong></p>
+  <p>그림 그리기 · AI 대화 · 활동 기록 · 보호자 리포트</p>
+  <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot" />
+  <img src="https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white" alt="Next.js" />
+</div>
 
-아동의 그림과 AI 대화 기록을 보호자가 확인하는 서비스입니다. 분석은 참고 정보이며 진단·치료를 제공하지 않습니다.
+## 프로젝트 소개
 
-## 기술 구성
+도담은 만 4~12세 아동이 그림과 대화로 생각과 감정을 표현하고, 보호자가 그 활동 기록을 확인하도록 돕는 서비스입니다. 아동의 그림·대화·활동 과정을 함께 다루며, AI 분석 결과는 보호자의 이해와 대화를 돕는 참고 정보로 제공합니다. 심리 진단이나 치료를 제공하지 않습니다.
 
-Java / Spring Boot, Flutter, Next.js, FastAPI, MySQL, MongoDB, Redis, MinIO
+| 기간 | 팀 규모 | 프로젝트 | 담당 |
+| --- | --- | --- | --- |
+| 2026.07.06 ~ 2026.08.14 | 6명 | SSAFY 공통 프로젝트 | 강병구 · Backend |
 
-## 반출 검토 대상
+## 서비스 화면
 
-백엔드 인증·자원 접근 검증·그림 활동·AI 연동·PDF 리포트 관련 개인 기여 후보가 있습니다. AI 모델과 전체 프론트엔드·인프라는 팀 영역입니다.
+| 보호자 홈 | 아동 캔버스 |
+| :---: | :---: |
+| <img src="docs/readme/screens/보호자홈.png" width="460" alt="보호자 홈 시연 화면" /> | <img src="docs/readme/screens/캔버스그리기.png" width="460" alt="아동 그림 활동 시연 화면" /> |
 
-현재 폴더는 반출 검토를 위해 정리한 팀 프로젝트 소스 후보입니다. 전체 파일을 신청자의 단독 구현으로 주장하지 않습니다. 공동 작성 부분과 공통 실행 코드의 포함 범위를 검토해 주세요.
+## 주요 기능
 
-## 검토 자료
+| 기능 | 처리 내용 |
+| --- | --- |
+| 보호자 인증 | OAuth 로그인, JWT 발급, Refresh Token 회전과 재사용 감지 |
+| 아동 활동 | 그림 활동 생성·초안 저장·재개·완료, 스트로크 묶음 저장 |
+| 접근 권한 | 보호자·아동·그림 활동의 관계를 데이터 조회 전에 확인 |
+| 그림 및 대화 분석 | 백엔드에서 AI 분석 계약을 호출하고 필수 응답과 상태를 검증 |
+| 보호자 리포트 | 그림·대화·분석 정보를 서버 PDF로 제공 |
+| 이미지 저장 | 메타데이터 제거, 방향 보정, 입력 크기 검증 후 저장 |
 
-- `review/file-manifest.json`: 포함 파일과 SHA-256
-- `review/personal-scope-candidates.csv`: 개인 기여 후보
-- `review/excluded-files.json`: 제외 경로와 사유
-- `review/sanitization-log.json`: 값 비공개 수정 내역
-- `review/original-readme.md`: 익명화한 원본 설명
+## 시스템 구조
 
-## 실행 조건
+```mermaid
+flowchart LR
+  App[Flutter App] --> BE[Spring Boot API]
+  Web[Next.js Web] --> BE
+  BE --> SQL[(MySQL)]
+  BE --> Doc[(MongoDB)]
+  BE --> Cache[(Redis)]
+  BE --> Object[(MinIO)]
+  BE --> AI[FastAPI AI]
+```
 
-운영 설정, 비밀키, 개인정보, 출처 미확인 이미지·폰트·데이터·압축 산출물과 Git 과거 이력은 포함하지 않았습니다. 예시 설정을 실제 로컬 설정으로 복사하고 필요한 자산을 제공해야 실행할 수 있습니다. 일부 테스트 상수도 예시값으로 바뀌었으므로 이 복사본의 테스트 통과를 보장하지 않습니다.
+MySQL은 사용자와 활동 상태, MongoDB는 스트로크·행동 이벤트, Redis는 단기 인증 상태와 캐시, MinIO는 이미지·오디오·PDF 객체를 담당합니다. AI 서비스는 백엔드를 통해 연동합니다.
 
-외부 공개는 검토 승인 후 허용된 범위와 기간에 진행합니다.
+## 담당 구현
+
+### 인증과 자원 접근 권한
+
+로그인한 보호자라는 사실과 대상 아동의 보호자라는 사실을 분리했습니다. 공통 Validator에서 인증 사용자와 아동·그림 활동의 소유 관계를 확인하고, 연결되지 않은 보호자나 삭제된 자원은 실제 조회 전에 차단합니다.
+
+Refresh Token은 Redis에서 토큰 묶음·기기·현재 해시·만료 시간을 관리합니다. Lua 스크립트로 검증·새 해시 교체·만료 시간 갱신을 함께 처리하고, 이미 교체된 토큰의 재사용을 감지하면 해당 토큰 묶음을 폐기합니다.
+
+- [자원 접근 검증](backend/src/main/java/com/ssafy/b209/auth/authorization/GuardianResourceAccessValidator.java)
+- [Refresh Token 세션 저장소](backend/src/main/java/com/ssafy/b209/auth/service/RedisRefreshTokenSessionStore.java)
+- [접근 권한 테스트](backend/src/test/java/com/ssafy/b209/auth/authorization/GuardianResourceAccessValidatorTest.java)
+
+### 그림 활동과 AI 연동
+
+그림 활동의 생성·저장·재개·완료 API와 AI 분석 Client를 구현했습니다. 분석 요청의 이미지 접근 수명을 제한하고 응답 필드·상태를 검증합니다. 분석과 리포트의 실패·재시도를 구분해 활동 완료 상태와 후속 처리 상태를 각각 관리합니다.
+
+### 서버 PDF 리포트
+
+팀이 서버 PDF를 정본으로 두기로 결정한 뒤 PDFBox와 openhtmltopdf를 비교했습니다. HTML/CSS 기반의 PDF 전용 템플릿을 사용하고, 인증 URL을 다시 호출하는 대신 저장소에서 이미지 자산을 읽도록 구현했습니다.
+
+- [리포트 이미지 자산 처리](backend/src/main/java/com/ssafy/b209/report/service/StorageReportAssetResolver.java)
+- [관련 테스트](backend/src/test/java/com/ssafy/b209/report/service/StorageReportAssetResolverTest.java)
+
+### 팀 역할
+
+6명이 Backend, Frontend, Infra/Data·AI를 나누어 개발했습니다. 위 담당 구현은 강병구의 작업 범위이며, AI 모델 개발과 전체 프론트엔드·인프라를 단독 구현한 프로젝트는 아닙니다.
+
+## 기술 스택
+
+| 영역 | 기술 |
+| --- | --- |
+| Backend | Java 21, Spring Boot, JPA, Gradle |
+| Frontend | Flutter, Dart, Next.js, React, TypeScript |
+| AI | Python, FastAPI |
+| Data | MySQL, MongoDB, Redis, MinIO |
+| Report | PDFBox, openhtmltopdf |
+| Runtime | Docker Compose |
+
+## 디렉터리 구조
+
+```text
+dodam/
+├── backend/             # Spring Boot API와 테스트
+├── frontend/
+│   ├── mobile/          # Flutter 아동·보호자 앱
+│   └── web/             # Next.js 웹
+├── ai/                  # FastAPI AI 서비스
+├── infra/               # 실행 환경과 인프라 구성
+├── docs/                # 설계·기술 문서와 서비스 화면
+├── exec/                # 프로젝트 산출물 경로
+├── tools/               # 개발 도구
+└── README.md
+```
+
+## 로컬 개발
+
+각 서비스의 환경변수와 데이터 저장소를 먼저 설정합니다. 운영 비밀값은 저장소에 포함하지 않으며 필요한 값은 로컬 환경에서 주입합니다.
+
+```bash
+# Backend
+cd backend
+./gradlew bootRun
+
+# Web — 별도 터미널
+cd frontend/web
+pnpm install
+pnpm dev
+
+# Mobile — 별도 터미널
+cd frontend/mobile
+flutter pub get
+flutter run
+```
+
+## 테스트
+
+```bash
+cd backend
+./gradlew test
+
+cd frontend/mobile
+flutter test
+
+cd frontend/web
+pnpm test:unit
+```
+
+통합 테스트에는 데이터 저장소와 Docker 환경이 필요할 수 있습니다. 설정·이미지·데이터의 외부 제공 범위에 따라 로컬 실행 전에 추가 준비가 필요합니다.

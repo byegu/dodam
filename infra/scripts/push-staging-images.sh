@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# 스테이징 이미지 로컬 레지스트리 푸시 (S15P11B209-359)
+#
+# k3s 의 containerd 는 **도커 데몬의 이미지 저장소를 보지 못한다.** 같은 호스트에 있어도
+# `dodam-backend:local` 은 containerd 입장에서 존재하지 않는 이미지다(356 에서 확인).
+# 그래서 로컬 레지스트리(127.0.0.1:5000)를 거쳐 넘긴다.
+#
+# 사용:
+#   infra/scripts/push-staging-images.sh                  # :local → :staging
+#   infra/scripts/push-staging-images.sh --tag 5298a8ff   # :local → :5298a8ff
+#   infra/scripts/push-staging-images.sh --with-ai        # ai(2.36GB) 포함
+#   infra/scripts/push-staging-images.sh --with-web       # 커뮤니티 웹 포함 (S15P11B209-383)
+#
+# ai 를 기본에서 뺀 이유: staging-min overlay 가 ai 를 replicas 0 으로 두므로 pull 되지 않는다.
+#   2.36GB 를 매번 밀 이유가 없다. 전체 스테이징으로 갈 때 --with-ai 로 켠다.
+# web 도 같은 이유로 옵트인이다 — 웹을 안 띄우는 overlay 에서 굳이 밀 필요가 없다.
+
+set -euo pipefail
+
+REGISTRY="${REGISTRY:-127.0.0.1:5000}"
+SRC_TAG="${SRC_TAG:-local}"
+TAG="staging"
+WITH_AI=0
+WITH_WEB=0
+EXPLICIT_SERVICES=0
+LIST_IMAGES=0
+SERVICES=()
+
+log() { printf '\n\033[1m▸ %s\033[0m\n' "$*"; }
+die() { printf '\n❌ %s\n' "$*" >&2; exit 1; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --tag)      TAG="${2:?--tag 에 값이 필요하다}"; shift 2 ;;
+    --with-ai)  WITH_AI=1; shift ;;
+    --with-web) WITH_WEB=1; shift ;;
+    --service)
+      case "${2:-}" in
+        backend|ai|web|nginx) SERVICES+=("$2"); EXPLICIT_SERVICES=1; shift 2 ;;
+        *) die "--service 는 backend, ai, web, nginx 중 하나여야 한다: '${2:-}'" ;;
+      esac
+      ;;
+    --list-images) LIST_IMAGES=1; shift ;;
+    *)          die "알 수 없는 인자: $1 (--tag TAG | --service SERVICE | --with-ai | --with-web | --list-images)" ;;
+  esac
+done
+
+if [ "$EXPLICIT_SERVICES" = "1" ]; then
+  IMAGES=()
+  for svc in "${SERVICES[@]}"; do
+    candidate="dodam-${svc}"
+    [[ " ${IMAGES[*]} " == *" ${candidate} "* ]] || IMAGES+=("$candidate")
+  done
+else
+  # 기존 호출과의 하위 호환: 기본 backend+nginx, 옵션으로 ai·web 추가.
+  IMAGES=(dodam-backend dodam-nginx)
+  [ "$WITH_AI"  = "1" ] && IMAGES+=(dodam-ai)
+  [ "$WITH_WEB" = "1" ] && IMAGES+=(dodam-web)
+fi
+
+if [ "$LIST_IMAGES" = "1" ]; then
+  printf '%s\n' "${IMAGES[*]}"
+  exit 0
+fi
+
+# ── 레지스트리 HTTP 조회 ───────────────────────────────────────────────────
+# ★ 여기가 이 스크립트에서 제일 헷갈리는 지점이다.
+#   레지스트리는 **호스트 루프백에만** 붙어 있다(127.0.0.1:5000 → HostIp=127.0.0.1).
+#   - 호스트에서 실행하면 curl 로 그냥 닿는다.
+#   - Jenkins 컨테이너 안에서는 127.0.0.1 이 **자기 자신**이라 닿지 않는다.
+#     (2026-07-29 빌드 18 이 정확히 이걸로 죽었다 — 같은 함정을 NodePort 주석에
+#      적어놓고 이 조회에서 다시 밟았다)
+#
+#   반면 `docker push` 는 클라이언트가 아니라 **데몬**이 수행한다. 데몬은 호스트에
+#   있으므로 127.0.0.1:5000 을 제대로 해석한다 → push 주소는 바꿀 필요가 없다.
+#   조회만 호스트 네트워크로 우회하면 된다.
+#
+# ★★ 조회용 이미지는 아무거나 쓰면 안 되고, **엔트리포인트를 반드시 덮어써야 한다.**
+#   `docker run <img> wget ...` 의 뒤쪽은 CMD 로 들어간다. 이미지에 ENTRYPOINT 가
+#   있으면 wget 이 실행되는 게 아니라 **엔트리포인트의 인자로 먹힌다.**
+#     dodam-nginx   : ENTRYPOINT /docker-entrypoint.sh — 끝에서 exec "$@" 라 wget 이 돈다
+#     dodam-backend : ENTRYPOINT java -jar /app/app.jar — `java -jar app.jar wget ...` 이 돼
+#                     스프링 부팅을 시도한다(=조회가 아니라 앱 기동)
+#   실제로 2026-08-09 빌드 #348 이 이걸로 죽었다. 조회 이미지 기본값이
+#   dodam-nginx:local 에서 IMAGES[0](=dodam-backend) 로 바뀌자 조회가 백엔드를 띄웠고,
+#   2분 7초를 태운 뒤 "레지스트리에 닿지 않는다"로 오진했다 — 레지스트리는 멀쩡했다.
+#   → --entrypoint wget 으로 못을 박고, wget 이 있는 이미지만 후보로 둔다.
+#     (dodam-ai 에는 wget 이 없다. 실측 2026-08-09)
+#   → timeout 을 씌워 조회 하나가 빌드를 분 단위로 잡아먹지 못하게 한다.
+registry_get() {
+  # 1) 호스트에서 실행된 경우
+  curl -fsS -m 5 "http://${REGISTRY}$1" 2>/dev/null && return 0
+  # 2) 컨테이너 안인 경우 — 호스트 네트워크에 붙인 일회용 컨테이너로 조회.
+  #    변경 범위에 따라 일부 :local 이 없을 수 있어 있는 것부터 차례로 시도한다.
+  for probe in ${PROBE_IMAGE:+"$PROBE_IMAGE"} \
+    "dodam-nginx:${SRC_TAG}" "dodam-web:${SRC_TAG}" "dodam-backend:${SRC_TAG}"; do
+    docker image inspect "$probe" >/dev/null 2>&1 || continue
+    timeout 20 docker run --rm --network host --entrypoint wget "$probe" \
+      -q -O - -T 5 "http://${REGISTRY}$1" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+# ── 1. 레지스트리가 살아 있는가 ────────────────────────────────────────────
+# reason: 죽어 있으면 push 가 한참 재시도하다 죽는다. 앞에서 끊고 이유를 말해준다.
+log "레지스트리 확인: $REGISTRY"
+registry_get "/v2/" >/dev/null 2>&1 \
+  || die "레지스트리에 닿지 않는다: http://${REGISTRY}/v2/
+   호스트·컨테이너 두 경로 모두 실패했다.
+   → 기동 확인: docker ps | grep dodam-registry (S15P11B209-356)
+   → 컨테이너에서 실행 중이라면 조회용 이미지도 확인: ${PROBE_IMAGE}"
+
+# ── 2. 원본 이미지가 있는가 ────────────────────────────────────────────────
+for img in "${IMAGES[@]}"; do
+  docker image inspect "${img}:${SRC_TAG}" >/dev/null 2>&1 \
+    || die "원본 이미지가 없다: ${img}:${SRC_TAG}
+   → 먼저 빌드할 것: docker compose -f infra/docker-compose.build.yml --env-file infra/.env build"
+done
+
+# ── 3. 태그 + 푸시 ─────────────────────────────────────────────────────────
+for img in "${IMAGES[@]}"; do
+  log "푸시: ${img}:${SRC_TAG} → ${REGISTRY}/${img}:${TAG}"
+  docker tag  "${img}:${SRC_TAG}" "${REGISTRY}/${img}:${TAG}"
+  docker push "${REGISTRY}/${img}:${TAG}"
+done
+
+# ── 4. 레지스트리에 실제로 올라갔는지 확인 ─────────────────────────────────
+# ★ push 의 종료코드만 믿지 않는다. "존재한다"와 "동작한다"는 따로 검증한다 —
+#   이 저장소에서 거짓 초록불로 두 번 데였다(07-22 빈 conf, 07-29 grep 오판).
+log "레지스트리 태그 확인"
+fail=0
+for img in "${IMAGES[@]}"; do
+  if registry_get "/v2/${img}/tags/list" | grep -q "\"${TAG}\""; then
+    printf '   ✅ %s:%s\n' "$img" "$TAG"
+  else
+    printf '   ❌ %s:%s — 레지스트리에서 확인되지 않는다\n' "$img" "$TAG"
+    fail=1
+  fi
+done
+[ "$fail" = "0" ] || die "푸시는 끝났다고 했지만 레지스트리에 없는 이미지가 있다."
+
+printf '\n✅ 푸시 완료 — %s (태그: %s)\n' "${IMAGES[*]}" "$TAG"
