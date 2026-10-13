@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">도담 — 그림과 이야기로 연결되는 마음</title>
+  <desc id="desc">크림색 배경에 그림 종이와 대화 말풍선을 배치한 도담 서비스 소개 배너</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff8e9"/><stop offset="1" stop-color="#e9f2e6"/></linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1" fill="#c8c5b7" opacity=".24"/></pattern>
+  </defs>
+  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="28" fill="url(#dots)"/>
+  <circle cx="1120" cy="34" r="96" fill="#f6de94" opacity=".45"/>
+  <circle cx="32" cy="366" r="104" fill="#d2e3cd" opacity=".65"/>
+  <g font-family="Segoe UI, Noto Sans KR, Malgun Gothic, sans-serif">
+    <text x="68" y="76" font-size="13" letter-spacing="4" font-weight="700" fill="#658272">DRAW · TALK · UNDERSTAND</text>
+    <text x="64" y="163" font-size="76" font-weight="800" letter-spacing="-4" fill="#2d443c">도담</text>
+    <text x="236" y="161" font-size="25" fill="#819387">圖談</text>
+    <text x="68" y="216" font-size="25" font-weight="600" fill="#42594c">아이의 그림과 이야기를, 보호자의 이해로.</text>
+    <text x="68" y="253" font-size="16" fill="#738178">그림 활동 · AI 대화 · 활동 기록 · 보호자 리포트</text>
+    <rect x="68" y="283" width="112" height="28" rx="14" fill="#fffdf7" stroke="#d9e2d3"/>
+    <text x="124" y="302" text-anchor="middle" font-size="12" font-weight="600" fill="#537465">CHILD + GUARDIAN</text>
+  </g>
+  <g transform="translate(808 64) rotate(-7 100 115)">
+    <rect x="4" y="8" width="210" height="232" rx="20" fill="#6c846c" opacity=".1"/>
+    <rect width="210" height="232" rx="20" fill="#fffefa" stroke="#d9dfcd" stroke-width="2"/>
+    <path d="M28 38h150" stroke="#f1d278" stroke-width="9" stroke-linecap="round"/>
+    <path d="M47 128l57-51 58 51M61 123v67h87v-67M94 190v-37h23v37" fill="none" stroke="#809e91" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="157" cy="77" r="14" fill="#efc87a"/>
+    <path d="M34 211h143" stroke="#ddd8ed" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(972 79)">
+    <path d="M0 20Q0 0 20 0h97q20 0 20 20v44q0 20-20 20H44l-24 21 2-21h-2Q0 84 0 64Z" fill="#e4dcf2" stroke="#c6b8dc" stroke-width="2"/>
+    <circle cx="44" cy="42" r="5" fill="#9684b9"/><circle cx="69" cy="42" r="5" fill="#9684b9"/><circle cx="94" cy="42" r="5" fill="#9684b9"/>
+  </g>
+  <path d="M1085 269l17-17 36 36-17 17z" fill="#ecc17d"/>
+  <path d="M1085 269l-7 24 24-7" fill="#f2dfba"/>
+  <path d="M1078 293l3-10 7 7Z" fill="#56635b"/>
+</svg>
