@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="800" viewBox="0 0 1480 800" role="img" aria-labelledby="title desc">
+  <title id="title">도담 · 개인 담당 백엔드 흐름</title>
+  <desc id="desc">자원 소유 관계 검증, AI Client 연동, 서버 PDF 생성의 세 경계를 나타낸다. AI 모델 개발 및 인프라 전체는 개인 담당 범위가 아니다.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#8d7956" stroke-width="1.5"/></marker>
+  </defs>
+  <rect width="1480" height="800" rx="24" fill="#fffcf5"/>
+  <g font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">
+    <rect x="48" y="48" width="7" height="66" rx="3" fill="#eab942"/>
+    <text x="76" y="76" font-size="18" font-weight="700" letter-spacing="2" fill="#95712d">DODAM / BACKEND</text>
+    <text x="76" y="117" font-size="36" font-weight="700" fill="#39352c">데이터 접근과 외부 처리의 경계</text>
+    <text x="76" y="155" font-size="22" fill="#716b5e">개인 담당 구현 요약 · 인증 이후의 권한, AI 응답, 리포트 자산을 각각 확인</text>
+
+    <rect x="48" y="194" width="1384" height="164" rx="18" fill="#fff4d4"/>
+    <text x="76" y="233" font-size="19" font-weight="700" fill="#987026">01 / 자원 접근</text>
+    <text x="76" y="273" font-size="27" font-weight="700" fill="#39352c">조회 전 확인</text>
+    <text x="76" y="312" font-size="21" fill="#716b5e">공통 Validator</text>
+    <rect x="328" y="221" width="290" height="108" rx="13" fill="#ffffff" stroke="#e8d9b5"/>
+    <text x="473" y="264" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">인증 사용자</text>
+    <text x="473" y="301" text-anchor="middle" font-size="21" fill="#716b5e">로그인한 보호자 확인</text>
+    <path d="M630 275 H670" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="688" y="221" width="330" height="108" rx="13" fill="#ffffff" stroke="#e8d9b5"/>
+    <text x="853" y="264" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">자원 소유 관계</text>
+    <text x="853" y="301" text-anchor="middle" font-size="21" fill="#716b5e">보호자 · 아동 · 그림 활동</text>
+    <path d="M1030 275 H1070" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="1088" y="221" width="316" height="108" rx="13" fill="#ffffff" stroke="#e8d9b5"/>
+    <text x="1246" y="264" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">허용된 조회</text>
+    <text x="1246" y="301" text-anchor="middle" font-size="21" fill="#716b5e">관계가 없으면 조회 전 차단</text>
+
+    <rect x="48" y="376" width="1384" height="164" rx="18" fill="#eaf3ef"/>
+    <text x="76" y="415" font-size="19" font-weight="700" fill="#487866">02 / AI 연동</text>
+    <text x="76" y="455" font-size="27" font-weight="700" fill="#39352c">계약과 응답 검증</text>
+    <text x="76" y="494" font-size="21" fill="#716b5e">백엔드 AI Client</text>
+    <rect x="328" y="403" width="290" height="108" rx="13" fill="#ffffff" stroke="#ccded5"/>
+    <text x="473" y="446" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">그림 활동 API</text>
+    <text x="473" y="483" text-anchor="middle" font-size="21" fill="#716b5e">생성 · 저장 · 재개 · 완료</text>
+    <path d="M630 457 H670" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="688" y="403" width="330" height="108" rx="13" fill="#ffffff" stroke="#ccded5"/>
+    <text x="853" y="446" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">단기 이미지 접근</text>
+    <text x="853" y="483" text-anchor="middle" font-size="21" fill="#716b5e">60초 · 단일 사용 토큰</text>
+    <path d="M1030 457 H1070" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="1088" y="403" width="316" height="108" rx="13" fill="#ffffff" stroke="#ccded5"/>
+    <text x="1246" y="446" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">AI 응답 확인</text>
+    <text x="1246" y="483" text-anchor="middle" font-size="21" fill="#716b5e">필드 · 상태 · 오류 구분</text>
+
+    <rect x="48" y="558" width="1384" height="164" rx="18" fill="#eeedf7"/>
+    <text x="76" y="597" font-size="19" font-weight="700" fill="#746492">03 / PDF 리포트</text>
+    <text x="76" y="637" font-size="27" font-weight="700" fill="#39352c">서버에서 생성</text>
+    <text x="76" y="676" font-size="21" fill="#716b5e">openhtmltopdf</text>
+    <rect x="328" y="585" width="290" height="108" rx="13" fill="#ffffff" stroke="#d8d3e8"/>
+    <text x="473" y="628" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">전용 템플릿</text>
+    <text x="473" y="665" text-anchor="middle" font-size="21" fill="#716b5e">PDF용 HTML / CSS</text>
+    <path d="M630 639 H670" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="688" y="585" width="330" height="108" rx="13" fill="#ffffff" stroke="#d8d3e8"/>
+    <text x="853" y="628" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">저장소 자산 읽기</text>
+    <text x="853" y="665" text-anchor="middle" font-size="21" fill="#716b5e">이미지 인증 URL 재호출 방지</text>
+    <path d="M1030 639 H1070" fill="none" stroke="#8d7956" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="1088" y="585" width="316" height="108" rx="13" fill="#ffffff" stroke="#d8d3e8"/>
+    <text x="1246" y="628" text-anchor="middle" font-size="25" font-weight="700" fill="#39352c">서버 PDF 제공</text>
+    <text x="1246" y="665" text-anchor="middle" font-size="21" fill="#716b5e">보호자 열람용 리포트</text>
+
+    <text x="76" y="763" font-size="20" fill="#716b5e">서버 PDF 정본은 팀 공동 결정 · AI 모델 개발과 전체 인프라는 이 개인 구현 요약에 포함하지 않음</text>
+  </g>
+</svg>

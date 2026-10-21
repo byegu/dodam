@@ -98,6 +98,10 @@
 
 **강병구 · Backend** — 인증·자원 접근 검증, 그림 활동 API와 AI Client, 서버 PDF 리포트 구현을 담당했습니다. 서비스 화면은 팀 공동 산출물입니다.
 
+<a href="docs/readme/implementation-flow.svg"><img src="docs/readme/implementation-flow.svg" width="100%" alt="개인 담당 백엔드 흐름: 자원 소유 관계 검증, 단기 이미지 접근과 AI 응답 검증, 저장소 자산을 이용한 서버 PDF" /></a>
+
+<sub>위 그림은 개인 담당 범위의 처리 경계를 요약한 것입니다. 전체 시스템 구성은 뒤의 팀 아키텍처와 구분합니다.</sub>
+
 <details open>
 <summary><strong>01 · 인증과 자원 접근 권한</strong></summary>
 
@@ -132,16 +136,9 @@ Refresh Token은 Redis에서 토큰 묶음·기기·현재 해시·만료 시간
 
 ## 시스템 구조
 
-```mermaid
-flowchart LR
-  App[Flutter App] --> BE[Spring Boot API]
-  Web[Next.js Web] --> BE
-  BE --> SQL[(MySQL)]
-  BE --> Doc[(MongoDB)]
-  BE --> Cache[(Redis)]
-  BE --> Object[(MinIO)]
-  BE --> AI[FastAPI AI]
-```
+<a href="docs/readme/system-architecture.png"><img src="docs/readme/system-architecture.png" width="100%" alt="도담 팀 시스템 아키텍처: Flutter와 Next.js, Nginx, Spring Boot, FastAPI 및 데이터 저장소, Docker Compose 배포와 모니터링 구성" /></a>
+
+<sub>최종 발표에 사용한 아키텍처 원본 이미지입니다. 이미지를 누르면 확대해서 볼 수 있습니다. 팀 전체 구성도이며, 개인 구현 범위를 뜻하지 않습니다. 최종 실행 환경은 Docker Compose 기준입니다.</sub>
 
 MySQL은 사용자와 활동 상태, MongoDB는 스트로크·행동 이벤트, Redis는 단기 인증 상태와 캐시, MinIO는 이미지·오디오·PDF 객체를 담당합니다. AI 서비스는 백엔드를 통해 연동합니다.
 
